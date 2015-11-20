@@ -1,3 +1,5 @@
+require './lib/catalog_onliner'
+
 
 describe "On1RspecWd" do
 
@@ -5,99 +7,93 @@ describe "On1RspecWd" do
     default_profile = Selenium::WebDriver::Firefox::Profile.from_name "default"
     default_profile.native_events = true
     @driver =  Sel_drive('firefox')
-    @base_url = "http://catalog.onliner.by"
-    @accept_next_alert = true
+    # @base_url = "http://catalog.onliner.by"
+    # @accept_next_alert = true
     @driver.manage.timeouts.implicit_wait = 30
     @verification_errors = []
-    @searh_params = ["Apple iPhone 6 Plus 16GB Space Gray", "Samsung Galaxy S6 edge (32GB) (G925)"]
+    @search_params = ["Apple iPhone 6 Plus 16GB Space Gray", "Samsung Galaxy S6 edge (32GB) (G925)"]
     @email = 'test@example.com'
     @pass = '1234'
   end
   
   after(:each) do
     @driver.quit
-    expect(@driver.verification_errors).to  eq([])
+    expect(@verification_errors).to  eq([])
   end
   
   it "test_on1_rspec_wd" do
-    @driver.get(@base_url + "/")
-
-    @driver.find_element(:name, "query").clear
-    @driver.find_element(:name, "query").send_keys @searh_params[0]
-    sleep(3)
-    @driver.switch_to.frame @driver.find_elements(:tag_name, "iframe")[0]
-    @driver.find_element(:link, @searh_params[0]).click
-    @driver.switch_to.default_content
-    verify { (expect(@driver.find_element(:css, "h2.catalog-masthead__title").text)).to  eql('Смартфон Apple iPhone 6 Plus 16GB Space Gray') }
+    catalog_page = CatalogOnliner.new(@driver)
+    verify { expect(catalog_page.search_product(@searh_params[0])).to eql('Смартфон Apple iPhone 6 Plus 16GB Space Gray')}
   end
   
 
   it "test_on2_rspec_wd" do
-    @driver.get(@base_url + "/")
-    @driver.find_element(:css, "div.g-top-i").click
-    @driver.find_element(:name, "query").clear
-    @driver.find_element(:name, "query").send_keys @searh_params[0]
-    @driver.switch_to.frame @driver.find_elements(:tag_name, "iframe")[0]
-    @driver.find_element(:link, @searh_params[0]).click
-    @driver.switch_to.default_content
-    @driver.find_element(:css, "span.i-checkbox__faux").click
-    verify { expect(@driver.find_element(:css, "a.compare-button__sub.compare-button__sub_main > span").text).to eql("1 товар") }
-    @driver.find_element(:css, "input.i-checkbox__real").click
+    catalog_page = CatalogOnliner.new(@driver)
+    catalog_page.search_product(@search_params[0])
+    catalog_page.default_content
+    catalog_page.add_to_cart
+    verify { expect(catalog_page.check_cart).to eql("1 товар") }
+    catalog_page.remove_from_cart
+    # @driver.find_element(:css, "input.i-checkbox__real").click
   end
 
   it "test_on3_rspec" do
-    @driver.get(@base_url + "/")
-    @driver.find_element(:name, "query").clear
-    @driver.find_element(:name, "query").send_keys @searh_params[0]
-    @driver.switch_to.frame @driver.find_elements(:tag_name, "iframe")[0]
-    @driver.find_element(:link, @searh_params[0]).click
-    @driver.switch_to.default_content
-    @driver.find_element(:css, "span.i-checkbox__faux").click
-    @driver.find_element(:name, "query").clear
-    @driver.find_element(:name, "query").send_keys @searh_params[1]
-    @driver.switch_to.frame @driver.find_elements(:tag_name, "iframe")[5]
-    @driver.find_element(:link, @searh_params[1]).click
-    @driver.switch_to.default_content
-    @driver.find_element(:css, "span.i-checkbox__faux").click
-    verify { expect(@driver.find_element(:link, "2 товара в сравнении").text).to  eql("2 товара в сравнении") }
-    @driver.find_element(:link, "2 товара в сравнении").click
-    @driver.find_element(:css, "h1.b-offers-title").click
-    verify { expect(@driver.find_element(:css, "h1.b-offers-title").text).to  eql("Сравнение товаров") }
-    @driver.find_element(:link, "Очистить сравнение").click
+    catalog_page = CatalogOnliner.new(@driver)
+    catalog_page.search_product(@search_params[0])
+    catalog_page.default_content
+    catalog_page.add_to_cart
+    catalog_page.search_product(@search_params[1], 5)
+    catalog_page.default_content
+    catalog_page.add_to_cart
+    verify { expect(catalog_page.check_cart).to  eql("2 товара в сравнении") }
+    catalog_page.click_link_basket
+    # @driver.find_element(:css, "h1.b-offers-title").click
+    verify { expect(catalog_page.get_basket_title).to  eql("Сравнение товаров") }
+    catalog_page.get_basket_title
   end
 
   it "test_on4_rspec_wd" do
-    @driver.get(@base_url + "/")
-    @driver.find_element(:css, "div.auth-bar__item.auth-bar__item--text").click
-    @driver.find_element(:xpath, "//div[@id='auth-container__forms']/div/div/div[2]").click
-    @driver.find_element(:css, "div.auth-box__part.is-active > div.auth-box__line > input.auth-box__input").clear
-    @driver.find_element(:css, "div.auth-box__part.is-active > div.auth-box__line > input.auth-box__input").send_keys @email
-    @driver.find_element(:xpath, "(//input[@type='password'])[2]").clear
-    @driver.find_element(:xpath, "(//input[@type='password'])[2]").send_keys "12345678"
-    @driver.find_element(:xpath, "(//input[@type='password'])[3]").clear
-    @driver.find_element(:xpath, "(//input[@type='password'])[3]").send_keys "12345678"
-    @driver.find_element(:xpath, "(//button[@type='submit'])[3]").click
-    @driver.find_element(:xpath, "//div[@id='auth-container__forms']/div/div[2]/form/div[5]/div").click
-    verify { expect(@driver.find_element(:xpath, "//div[@id='auth-container__forms']/div/div[2]/form/div[5]/div").text).to  eql("Текст, указанный на картинке, введен неверно") }
+    catalog_page = CatalogOnliner.new(@driver)
+    catalog_page.go_to_registration
+    catalog_page.email = @email
+    catalog_page.pass = '12345678'
+    catalog_page.pass_conf = '12345678'
+    catalog_page.registration_click
+    # @driver.find_element(:xpath, "//div[@id='auth-container__forms']/div/div[2]/form/div[5]/div").click
+    verify { expect(catalog_page.check_registration).to  eql("Текст, указанный на картинке, введен неверно") }
   end
 
   it "test_on5_rspec" do
-    @driver.get(@base_url + "/")
-    @driver.find_element(:css, "div.auth-bar__item.auth-bar__item--text").click
-    @driver.find_element(:css, "input.auth-box__input").clear
-    @driver.find_element(:css, "input.auth-box__input").send_keys "test@example.com"
-    @driver.find_element(:xpath, "(//button[@type='submit'])[2]").click
-    verify { expect(@driver.find_element(:xpath, "//div[@id='auth-container__forms']/div/div[2]/form/div[4]/div").text).to eql("Неверный ник или e-mail") }
+    catalog_page = CatalogOnliner.new(@driver)
+    catalog_page.go_to_authorize
+    catalog_page.login =  @email
+    catalog_page.sign_in
+    # @driver.find_element(:xpath, "(//button[@type='submit'])[2]").click
+    verify { expect(catalog_page.check_sign_in).to eql("Неверный ник или e-mail") }
   end
   
   it "test_on6" do
-    @driver.get(@base_url + "/")
-    @driver.find_element(:link, "Планшеты").click
-    @driver.find_element(:xpath, "//input[@value='apple']").click
-    @driver.find_element(:css, "div.schema-product__title > a > span").click
-    expect(@driver.current_url).to match(/^[\s\S]*tabletpc\/apple\/ipadair16gbsg$/)
+    catalog_page = CatalogOnliner.new(@driver)
+    catalog_page.go_to_tablet
+    catalog_page.click_apple
+    expect(catalog_page.current_url).to match(/^[\s\S]*tabletpc\/apple\/ipadair16gbsg$/)
   end
   
+  it "test_r7" do
+    catalog_page = CatalogOnliner.new(@driver)
+    catalog_page.goto
+    catalog_page.go_to_chairs
+    catalog_page.click_filters
+    catalog_page.click_to_shema
+    expect(catalog_page.current_url).to match(/^[\s\S]*office_chair\/metta\/lk11ch\/reviews$/)
+  end
+
+  it "test_sort_pan" do
+    catalog_page = CatalogOnliner.new(@driver)
+    verify { (catalog_page.check_name_pan).should == "Peterhof PH-15390" }
+    catalog_page.click_shema_pun
+    catalog_page.current_url.should =~ /^[\s\S]*pan\/peterhof\/ph15390$/
+  end
   
   def element_present?(how, what)
     @driver.find_element(how, what)
